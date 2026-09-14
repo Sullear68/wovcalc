@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WoV Crafting Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@500;600;750&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #08090e;
+      --panel-bg: rgba(18, 20, 28, 0.75);
+      --panel-hover: rgba(28, 32, 44, 0.85);
+      --accent: #007acc;
+      --accent-hover: #0099ff;
+      --text: #e1e1e6;
+      --text-muted: #8b8c9e;
+      --border: rgba(40, 42, 58, 0.8);
+      --highlight: #00d2ff;
+      --danger: #ef4444;
+      --gold-accent: #c8a052;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body { 
+      font-family: 'Inter', system-ui, sans-serif; 
+      background-color: var(--bg-dark); 
+      color: var(--text); 
+      display: flex; 
+      flex-direction: column; 
+      height: 100vh; 
+      overflow: hidden; 
+      background-image: 
+        radial-gradient(circle at 15% 20%, rgba(0, 210, 255, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(163, 53, 238, 0.03) 0%, transparent 40%);
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(12, 13, 18, 0.6); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--highlight); }
+
+    .top-banner { 
+      background: linear-gradient(180deg, rgba(22, 23, 32, 0.95) 0%, rgba(16, 17, 23, 0.95) 100%); 
+      backdrop-filter: blur(12px);
+      padding: 16px 24px; 
+      border-bottom: 1px solid var(--border); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      position: relative; 
+      z-index: 100; 
+      flex-shrink: 0; 
+      box-shadow: 0 4px 25px rgba(0,0,0,0.6);
+    }
+    .top-banner h1 { 
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.8rem; 
+      color: #fff; 
+      letter-spacing: 2px; 
+      text-transform: uppercase; 
+      font-weight: 800; 
+      display: flex; 
+      align-items: center; 
+      gap: 12px; 
+      text-align: center;
+      text-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
+    }
+    .top-banner h1::before { 
+      content: ''; 
+      display: inline-block; 
+      width: 10px; 
+      height: 10px; 
+      background: var(--highlight); 
+      border-radius: 50%; 
+      box-shadow: 0 0 12px var(--highlight); 
+    }
+    .top-banner .version-tag { 
+      position: absolute; 
+      right: 24px; 
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.85rem; 
+      color: var(--highlight); 
+      font-weight: 700; 
+      background: rgba(0, 210, 255, 0.1);
+      border: 1px solid rgba(0, 210, 255, 0.3);
+      padding: 4px 10px;
+      border-radius: 12px;
+      letter-spacing: 1px;
+    }
+
+    .app-container { display: flex; flex: 1; overflow: hidden; }
+
+    aside { 
+      width: 380px; 
+      background: var(--panel-bg); 
+      backdrop-filter: blur(16px);
+      border-right: 1px solid var(--border); 
+      display: flex; 
+      flex-direction: column; 
+      padding: 20px; 
+      flex-shrink: 0; 
+      gap: 14px;
+      overflow-y: auto;
+    }
+    .control-group { display: flex; flex-direction: column; gap: 6px; position: relative; }
+    label { font-family: 'Rajdhani', sans-serif; font-size: 0.8rem; color: var(--text-muted); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+    
+    input[type="text"], input[type="number"] { 
+      width: 100%; 
+      padding: 10px 14px; 
+      background: rgba(11, 12, 17, 0.8); 
+      color: #fff; 
+      border: 1px solid var(--border); 
+      border-radius: 8px; 
+      font-size: 0.95rem; 
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    input[type="text"]:focus, input[type="number"]:focus { 
+      outline: none; 
+      border-color: var(--highlight); 
+      box-shadow: 0 0 12px rgba(0, 210, 255, 0.25), inset 0 0 0 1px rgba(0, 210, 255, 0.2); 
+    }
+
+    .autocomplete-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 220px;
+      overflow-y: auto;
+      background: #0f1017;
+      border: 1px solid var(--highlight);
+      border-radius: 0 0 8px 8px;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+    }
+    .autocomplete-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .autocomplete-item:hover {
+      background: rgba(0, 210, 255, 0.15);
+      color: var(--highlight);
+    }
+
+    .btn { 
+      cursor: pointer; 
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); 
+      color: #fff;
+      border: none; 
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700; 
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.2s ease; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(0, 122, 204, 0.35);
+    }
+    .btn:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 153, 255, 0.5); 
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      box-shadow: none;
+    }
+    .btn-secondary:hover {
+      background: var(--panel-hover);
+      color: #fff;
+      border-color: var(--text-muted);
+      box-shadow: none;
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #fff;
+      border-color: var(--danger);
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    .preset-btn {
+      background: rgba(0, 210, 255, 0.06);
+      border: 1px solid rgba(0, 210, 255, 0.2);
+      color: var(--highlight);
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      font-size: 0.8rem;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .preset-btn:hover {
+      background: rgba(0, 210, 255, 0.2);
+      border-color: var(--highlight);
+      box-shadow: 0 0 8px rgba(0, 210, 255, 0.3);
+    }
+
+    .queue-box {
+      background: rgba(11, 12, 17, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-height: 180px;
+      overflow-y: auto;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .queue-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      border: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .queue-item:hover { border-color: var(--border); }
+    .queue-item-name { font-weight: 500; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+    .queue-item-actions { display: flex; align-items: center; gap: 6px; }
+    
+    .stepper-btn {
+      background: rgba(0, 210, 255, 0.1);
+      border: 1px solid rgba(0, 210, 255, 0.3);
+      color: var(--highlight);
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      transition: background 0.15s;
+    }
+    .stepper-btn:hover { background: rgba(0, 210, 255, 0.3); }
+    .queue-item-qty { font-family: 'Rajdhani', sans-serif; color: var(--highlight); font-weight: 700; min-width: 24px; text-align: center; }
+    
+    .remove-queue-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      transition: color 0.15s;
+      margin-left: 2px;
+    }
+    .remove-queue-btn:hover { color: var(--danger); }
+
+    .checkbox-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.9rem;
+      color: var(--text);
+      padding: 2px 0;
+    }
+    .checkbox-option input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--highlight);
+      cursor: pointer;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .disclaimer-text {
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .credits-text {
+      font-size: 0.73rem;
+      color: var(--highlight);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: rgba(10, 11, 15, 0.5); }
+    
+    .item-header { 
+      background: var(--panel-bg); 
+      backdrop-filter: blur(12px);
+      padding: 20px 32px; 
+      border-bottom: 1px solid var(--border); 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+    }
+    .item-header-info { display: flex; flex-direction: column; gap: 6px; }
+    .item-header h2 { 
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1.6rem; 
+      color: #fff; 
+      font-weight: 700; 
+      letter-spacing: 0.5px; 
+      display: flex; 
+      align-items: center; 
+      gap: 12px; 
+    }
+
+    .item-image-placeholder {
+      width: 72px;
+      height: 72px;
+      background: rgba(11, 12, 17, 0.8);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .item-image-placeholder:hover {
+      border-color: var(--highlight);
+      box-shadow: 0 0 15px rgba(0, 210, 255, 0.25);
+    }
+    .item-image-placeholder svg { width: 26px; height: 26px; fill: var(--text-muted); transition: fill 0.2s; }
+    .item-image-placeholder:hover svg { fill: var(--highlight); }
+    .item-image-placeholder img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .item-image-placeholder input[type="file"] { display: none; }
+
+    .content-viewport { flex: 1; padding: 32px; overflow-y: auto; display: flex; flex-direction: column; gap: 28px; }
+    
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .section-title { 
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1rem; 
+      color: var(--highlight); 
+      text-transform: uppercase; 
+      letter-spacing: 1.5px; 
+      font-weight: 700;
+    }
+
+    .progress-container {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      backdrop-filter: blur(12px);
+    }
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: rgba(11, 12, 17, 0.8);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--highlight) 100%);
+      border-radius: 4px;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+    }
+
+    .raw-materials-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .mat-card { 
+      background: var(--panel-bg); 
+      backdrop-filter: blur(8px);
+      padding: 14px 18px; 
+      border-radius: 10px; 
+      border: 1px solid var(--border); 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+    .mat-card:hover { 
+      background: var(--panel-hover); 
+      border-color: rgba(0, 210, 255, 0.4); 
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+    .mat-card.completed { opacity: 0.45; text-decoration: line-through; border-style: dashed; }
+    .mat-card .mat-info { display: flex; align-items: center; gap: 12px; }
+    .mat-card .checkbox {
+      width: 18px;
+      height: 18px;
+      border: 1px solid var(--text-muted);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(11, 12, 17, 0.5);
+      transition: all 0.2s;
+    }
+    .mat-card.completed .checkbox { background: var(--highlight); border-color: var(--highlight); box-shadow: 0 0 8px rgba(0, 210, 255, 0.6); }
+    .mat-card.completed .checkbox::after { content: '✓'; color: #000; font-size: 12px; font-weight: bold; }
+    .mat-card .mat-counts { display: flex; flex-direction: column; align-items: flex-end; }
+    .mat-card span.count { font-family: 'Rajdhani', sans-serif; color: var(--highlight); font-weight: 700; font-size: 1.15rem; }
+
+    table { width: 100%; border-collapse: collapse; background: var(--panel-bg); backdrop-filter: blur(12px); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+    th, td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    th { background: rgba(18, 19, 25, 0.9); color: var(--text-muted); font-family: 'Rajdhani', sans-serif; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    tr.roadmap-row { transition: all 0.2s ease; cursor: pointer; }
+    tr.roadmap-row.completed td { opacity: 0.45; text-decoration: line-through; }
+    .roadmap-checkbox-container { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .roadmap-checkbox {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--highlight);
+    }
+    .station-badge {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.75rem;
+      background: rgba(0, 122, 204, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(0, 122, 204, 0.3);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .bottom-split-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 1200px) {
+      .bottom-split-container { grid-template-columns: 1fr; }
+    }
+
+    .tree-container {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
+      height: 100%;
+      min-height: 240px;
+      max-height: 400px;
+      overflow: auto;
+    }
+
+    .tree-group-title {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.9rem;
+      color: var(--highlight);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .tree-group-title:not(:first-child) {
+      margin-top: 16px;
+    }
+
+    .tree-container ul {
+      list-style-type: none;
+      padding-left: 20px;
+      position: relative;
+      margin: 4px 0;
+    }
+
+    .tree-container > ul {
+      padding-left: 4px;
+    }
+
+    .tree-container ul::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 12px;
+      left: 6px;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .tree-container > ul::before {
+      display: none;
+    }
+
+    .tree-container li {
+      position: relative;
+      margin: 6px 0;
+    }
+
+    .tree-container li::before {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: -14px;
+      width: 12px;
+      height: 2px;
+      background: var(--border);
+    }
+
+    .tree-container > ul > li::before {
+      display: none;
+    }
+
+    .tree-node {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(11, 12, 17, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      transition: all 0.2s ease;
+    }
+
+    .tree-node:hover {
+      border-color: var(--highlight);
+      box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .tree-node img {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    .tree-node-title {
+      font-size: 0.85rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .tree-node-qty {
+      font-family: 'Rajdhani', sans-serif;
+      background: rgba(0, 210, 255, 0.1);
+      color: var(--highlight);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 210, 255, 0.25);
+    }
+
+    .tree-node-station {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .info-panel-box { 
+      background: var(--panel-bg); 
+      backdrop-filter: blur(12px);
+      padding: 22px; 
+      border-radius: 10px; 
+      border: 1px solid var(--border); 
+      overflow-x: auto; 
+      height: 100%;
+      min-height: 240px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .info-category-title {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.85rem;
+      color: var(--highlight);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 4px;
+      margin-top: 4px;
+    }
+    .info-item-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      padding: 2px 0;
+    }
+    .info-item-row span:last-child {
+      color: var(--text-muted);
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body oncontextmenu="return false;">
+
+  <header class="top-banner">
+    <h1>WoV Crafting Calculator</h1>
+    <span class="version-tag">PRO v5.0</span>
+  </header>
+
+  <div class="app-container">
+    <aside>
+      <div class="control-group">
+        <label for="itemSearchInput">Search Item / Component</label>
+        <input type="text" id="itemSearchInput" placeholder="Type to search items..." autocomplete="off" oninput="handleSearchInput()" onfocus="handleSearchInput()" onkeydown="handleSearchKeyDown(event)">
+        <div id="autocompleteList" class="autocomplete-list"></div>
+      </div>
+
+      <div class="control-group">
+        <label>Crafting Queue <span id="queueCountBadge" style="color:var(--highlight);">(0)</span></label>
+        <div id="craftingQueueBox" class="queue-box">
+          <div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 0.82rem;">Queue is empty. Type above or pick a set below.</div>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Full Gear Set Presets</label>
+        <div class="presets-grid">
+          <button class="preset-btn" onclick="loadGearSet('Bronze')">Bronze Set</button>
+          <button class="preset-btn" onclick="loadGearSet('Iron')">Iron Set</button>
+          <button class="preset-btn" onclick="loadGearSet('Steel')">Steel Set</button>
+          <button class="preset-btn" onclick="loadGearSet('Mithril')">Mithril Set</button>
+          <button class="preset-btn" onclick="loadGearSet('DuskKnight')">DuskKnight Set</button>
+          <button class="preset-btn btn-danger" style="grid-column: span 2;" onclick="clearQueue()">Clear Queue</button>
+        </div>
+      </div>
+
+      <div class="control-group" style="margin-top: 2px;">
+        <label class="checkbox-option">
+          <input type="checkbox" id="saveProgressToggle" onchange="handleToggleSaveProgress()">
+          <span>Save Progress Locally</span>
+        </label>
+      </div>
+
+      <button class="btn btn-secondary" onclick="copyMaterialsSummary()">📋 Copy Materials Summary</button>
+      <button class="btn btn-secondary" onclick="downloadTextFile()">💾 Download Text File (.txt)</button>
+      <button class="btn btn-secondary" onclick="downloadCSVFile()">📊 Export to CSV</button>
+      <button class="btn btn-secondary" onclick="resetCurrentProgress()">🔄 Reset Checklist Progress</button>
+
+      <div class="sidebar-footer">
+        <p class="disclaimer-text">Free use community tool. Not officially affiliated with Winds of Valen.</p>
+        <p class="credits-text">Created with love by the Winds of Valen Dev & Community Team at Fiery Dog Games.</p>
+        <p class="disclaimer-text" style="color: var(--highlight); font-weight: 600; margin-top: 2px;">© 2026 Sullear. All rights reserved.</p>
+      </div>
+    </aside>
+
+    <main>
+      <div class="item-header">
+        <div class="item-header-info">
+          <h2 id="selectedItemTitle">Select or Queue Items</h2>
+        </div>
+        
+        <label class="item-image-placeholder" id="itemImageContainer" title="Click to upload custom item icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </svg>
+          <span>Icon</span>
+          <input type="file" id="imageUploader" accept="image/*" onchange="previewUploadedImage(event)">
+        </label>
+      </div>
+
+      <div class="content-viewport">
+        <div class="progress-container">
+          <div class="progress-info">
+            <span>Crafting Completion</span>
+            <span id="progressPercentage">0%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-header">
+            <h3 class="section-title">Phase 1: Raw Material / Sourcing Checklist</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">(Click items to check off)</span>
+          </div>
+          <div id="rawMaterialsContainer" class="raw-materials-grid" style="margin-top: 14px;"></div>
+        </div>
+
+        <div>
+          <div class="section-header">
+            <h3 class="section-title">Phase 2+: Assembly & Procurement Roadmap</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">(Check steps as you gather/craft)</span>
+          </div>
+          <table style="margin-top: 14px;">
+            <thead>
+              <tr>
+                <th>Phase</th>
+                <th>Source / Station</th>
+                <th>Inputs Used</th>
+                <th>Output Created</th>
+              </tr>
+            </thead>
+            <tbody id="roadmapTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="bottom-split-container">
+          <div>
+            <div class="section-header">
+              <h3 class="section-title">Nested Hierarchy Tree View</h3>
+            </div>
+            <div id="treeViewContainer" class="tree-container" style="margin-top: 14px;"></div>
+          </div>
+          <div>
+            <div class="section-header">
+              <h3 class="section-title">Mob & Vendor Sourcing Reference</h3>
+            </div>
+            <div class="info-panel-box" id="infoPanelBox" style="margin-top: 14px;">
+              <div class="info-category-title">Mob Drops</div>
+              <div class="info-item-row"><span>Cow (Lvl 5)</span><span>cowhide</span></div>
+              <div class="info-item-row"><span>Boar (Lvl 17)</span><span>Tough Pelt</span></div>
+              <div class="info-item-row"><span>Elf (Lvl 37)</span><span>Elven Cloth, Essence</span></div>
+              <div class="info-item-row"><span>Elf Scholar (Lvl 37)</span><span>Elven Cloth, Essence</span></div>
+
+              <div class="info-category-title" style="margin-top: 8px;">Processing Sources</div>
+              <div class="info-item-row"><span>Fishing / Potions</span><span>Essence (Processed)</span></div>
+
+              <div class="info-category-title" style="margin-top: 8px;">Special / Boss Drops</div>
+              <div class="info-item-row"><span>DuskKnight Schematics</span><span>Boss / Rare</span></div>
+              <div class="info-item-row"><span>Volcanic Core</span><span>Volcanic Drop</span></div>
+              <div class="info-item-row"><span>Charred Ring Pieces (#1-#3)</span><span>Volcanic Drop</span></div>
+
+              <div class="info-category-title" style="margin-top: 8px;">Key Vendor Linings</div>
+              <div class="info-item-row"><span>Thick Leather Vest Line</span><span>100 Gold + 4 Thick Leather</span></div>
+              <div class="info-item-row"><span>Elven Cloth Vest Line</span><span>250 Gold + 5 Elven Cloth</span></div>
+              <div class="info-item-row"><span>Exquisite Silk Vest Line</span><span>10000 Gold + 6 Exquisite Silk</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'x' || e.key === 'a' || e.key === 'u' || e.key === 's')) {
+        e.preventDefault();
+        return false;
+      }
+    });
+
+    const itemDatabase = {
+      "Bronze Bar": { level: 1 },
+      "Iron Bar": { level: 10 },
+      "Steel Bar": { level: 20 },
+      "Mithril Bar": { level: 31 },
+      "Gold Bar": { level: 40 },
+      "Silver Bar": { level: 40 },
+      "Bronze Sword": { level: 2 },
+      "Bronze Platelegs": { level: 4 },
+      "Bronze Platebody": { level: 6 },
+      "Bronze Helmet": { level: 8 },
+      "Iron Sword": { level: 12 },
+      "Iron Platelegs": { level: 14 },
+      "Iron Platebody": { level: 16 },
+      "Iron Helmet": { level: 18 },
+      "Mining Gloves": { level: 21 },
+      "Steel Sword": { level: 22 },
+      "Steel Platelegs": { level: 24 },
+      "Steel Platebody": { level: 26 },
+      "Steel Helmet": { level: 28 },
+      "Mithril Sword": { level: 32 },
+      "Mithril Platelegs": { level: 34 },
+      "Mithril Platebody": { level: 36 },
+      "Mithril Helmet": { level: 38 },
+      "Ore Crate": { level: 45 },
+      "Volcanic Ring": { level: 50 },
+      "Volcanic Ward": { level: 60 },
+      "DuskKnight Boots": { level: 60 },
+      "DuskKnight Platelegs": { level: 62 },
+      "DuskKnight Platebody": { level: 66 },
+      "DuskKnight Helmet": { level: 68 },
+      "Iron Plate": { level: 10 },
+      "Iron Rod": { level: 11 },
+      "Steel Plate": { level: 20 },
+      "Steel Rod": { level: 21 },
+      "Large Steel Plate": { level: 21 },
+      "Large Steel Rod": { level: 22 },
+      "Mithril Plate": { level: 30 },
+      "Large Mithril Plate": { level: 31 },
+      "Large Mithril Rod": { level: 33 },
+      "Silver Plate": { level: 40 },
+      "Silver Foil": { level: 45 },
+      "Gold Plate": { level: 40 },
+      "Golden Shield Frame": { level: 50 },
+      "Small Ebony Plate": { level: 60 },
+      "DuskKnight Boot Left Sabaton": { level: 60 },
+      "DuskKnight Boot Right Sabaton": { level: 60 },
+      "DuskKnight Boot Greave": { level: 60 },
+      "DuskKnight Leg Cuisses": { level: 62 },
+      "DuskKnight Leg Tuille": { level: 62 },
+      "DuskKnight Leg Poleyn": { level: 62 },
+      "DuskKnight Leg Tasset": { level: 62 },
+      "DuskKnight Body Breastplate": { level: 66 },
+      "DuskKnight Body Pauldron": { level: 66 },
+      "DuskKnight Body Couter": { level: 66 },
+      "DuskKnight Body Rerebrace": { level: 66 },
+      "DuskKnight Body Vambrace": { level: 66 },
+      "DuskKnight Helmet Face Plate": { level: 68 },
+      "DuskKnight Helmet Head Plate": { level: 68 },
+      "DuskKnight Helmet Spike": { level: 68 }
+    };
+
+    function getItemLevel(itemName) {
+      return itemDatabase[itemName]?.level ?? null;
+    }
+
+    const mobLevels = {
+      "Cow": 5,
+      "Boar": 17,
+      "Elf": 37,
+      "Elf Scholar": 37
+    };
+
+    const craftingData = {
+      "anvil": {
+        "Iron Plate": { "inputs": [{ "item_name": "Iron Bar", "quantity": 2 }] },
+        "Iron Rod": { "inputs": [{ "item_name": "Iron Bar", "quantity": 1 }] },
+        "Silver Plate": { "inputs": [{ "item_name": "Silver Bar", "quantity": 7 }] },
+        "Silver Foil": { "inputs": [{ "item_name": "Silver Plate", "quantity": 1 }] },
+        "Steel Plate": { "inputs": [{ "item_name": "Steel Bar", "quantity": 2 }] },
+        "Steel Rod": { "inputs": [{ "item_name": "Steel Bar", "quantity": 1 }] },
+        "Large Steel Plate": { "inputs": [{ "item_name": "Steel Plate", "quantity": 2 }] },
+        "Large Steel Rod": { "inputs": [{ "item_name": "Steel Rod", "quantity": 2 }] },
+        "Mithril Plate": { "inputs": [{ "item_name": "Mithril Bar", "quantity": 4 }] },
+        "Mithril Rod": { "inputs": [{ "item_name": "Mithril Bar", "quantity": 2 }] },
+        "Large Mithril Plate": { "inputs": [{ "item_name": "Mithril Plate", "quantity": 4 }] },
+        "Large Mithril Rod": { "inputs": [{ "item_name": "Mithril Rod", "quantity": 2 }] },
+        "Gold Plate": { "inputs": [{ "item_name": "Gold Bar", "quantity": 8 }] },
+        "Golden Shield Frame": { "inputs": [{ "item_name": "Gold Plate", "quantity": 5 }, { "item_name": "Gold Bar", "quantity": 3 }, { "item_name": "Steel Rod", "quantity": 2 }, { "item_name": "Steel Bar", "quantity": 2 }] },
+        "Small Ebony Plate": { "inputs": [{ "item_name": "Ebony Bar", "quantity": 4 }] },
+        "Small Ebony Rod": { "inputs": [{ "item_name": "Ebony Bar", "quantity": 2 }] },
+        "Ebony Plate": { "inputs": [{ "item_name": "Small Ebony Plate", "quantity": 4 }, { "item_name": "Ebony Bar", "quantity": 3 }] },
+        "Ebony Rod": { "inputs": [{ "item_name": "Small Ebony Rod", "quantity": 4 }, { "item_name": "Ebony Bar", "quantity": 3 }] },
+        "Large Ebony Plate": { "inputs": [{ "item_name": "Ebony Plate", "quantity": 4 }, { "item_name": "Ebony Bar", "quantity": 3 }] },
+        "Large Ebony Rod": { "inputs": [{ "item_name": "Ebony Rod", "quantity": 4 }, { "item_name": "Ebony Bar", "quantity": 3 }] },
+        "DuskKnight Boot Left Sabaton": { "inputs": [{ "item_name": "Ebony Plate", "quantity": 1 }, { "item_name": "Silver Foil", "quantity": 2 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Boot Right Sabaton": { "inputs": [{ "item_name": "Ebony Plate", "quantity": 1 }, { "item_name": "Silver Foil", "quantity": 2 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Boot Greave": { "inputs": [{ "item_name": "Large Ebony Plate", "quantity": 1 }, { "item_name": "Silver Foil", "quantity": 2 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Leg Cuisses": { "inputs": [{ "item_name": "Large Ebony Plate", "quantity": 2 }, { "item_name": "Silver Foil", "quantity": 2 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Leg Tuille": { "inputs": [{ "item_name": "Ebony Plate", "quantity": 1 }, { "item_name": "Silver Foil", "quantity": 1 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Leg Poleyn": { "inputs": [{ "item_name": "Ebony Plate", "quantity": 1 }, { "item_name": "Silver Foil", "quantity": 1 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Leg Tasset": { "inputs": [{ "item_name": "Ebony Plate", "quantity": 3 }, { "item_name": "Silver Foil", "quantity": 3 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Body Breastplate": { "inputs": [{ "item_name": "Large Ebony Plate", "quantity": 4 }, { "item_name": "Silver Foil", "quantity": 8 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Body Pauldron": { "inputs": [{ "item_name": "Ebony Plate", "quantity": 1 }, { "item_name": "Silver Foil", "quantity": 1 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Body Couter": { "inputs": [{ "item_name": "Ebony Plate", "quantity": 1 }, { "item_name": "Silver Foil", "quantity": 1 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Body Rerebrace": { "inputs": [{ "item_name": "Ebony Plate", "quantity": 2 }, { "item_name": "Silver Foil", "quantity": 2 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Body Vambrace": { "inputs": [{ "item_name": "Ebony Plate", "quantity": 2 }, { "item_name": "Silver Foil", "quantity": 2 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Helmet Face Plate": { "inputs": [{ "item_name": "Large Ebony Plate", "quantity": 1 }, { "item_name": "Silver Foil", "quantity": 2 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Helmet Head Plate": { "inputs": [{ "item_name": "Large Ebony Plate", "quantity": 1 }, { "item_name": "Silver Foil", "quantity": 2 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Helmet Spike": { "inputs": [{ "item_name": "Large Ebony Rod", "quantity": 1 }, { "item_name": "Silver Foil", "quantity": 1 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] }
+      },
+      "craft workbench": {
+        "Bronze Sword": { "inputs": [{ "item_name": "Bronze Bar", "quantity": 6 }] },
+        "Bronze Platelegs": { "inputs": [{ "item_name": "Bronze Bar", "quantity": 8 }, { "item_name": "Rough Leather", "quantity": 2 }] },
+        "Bronze Platebody": { "inputs": [{ "item_name": "Bronze Bar", "quantity": 10 }, { "item_name": "Rough Leather", "quantity": 3 }] },
+        "Bronze Helmet": { "inputs": [{ "item_name": "Bronze Bar", "quantity": 4 }] },
+        "Iron Sword": { "inputs": [{ "item_name": "Iron Rod", "quantity": 4 }, { "item_name": "Iron Bar", "quantity": 2 }] },
+        "Iron Platelegs": { "inputs": [{ "item_name": "Iron Plate", "quantity": 4 }, { "item_name": "Rough Cloth", "quantity": 3 }] },
+        "Iron Platebody": { "inputs": [{ "item_name": "Iron Plate", "quantity": 5 }, { "item_name": "Rough Cloth", "quantity": 4 }] },
+        "Iron Helmet": { "inputs": [{ "item_name": "Iron Plate", "quantity": 2 }] },
+        "Mining Gloves": { "inputs": [{ "item_name": "Steel Plate", "quantity": 2 }, { "item_name": "Steel Bar", "quantity": 2 }, { "item_name": "Rough Leather", "quantity": 2 }] },
+        "Steel Sword": { "inputs": [{ "item_name": "Large Steel Rod", "quantity": 5 }, { "item_name": "Steel Rod", "quantity": 4 }] },
+        "Steel Platelegs": { "inputs": [{ "item_name": "Large Steel Plate", "quantity": 3 }, { "item_name": "Steel Plate", "quantity": 2 }, { "item_name": "Thick leather pant line", "quantity": 1 }] },
+        "Steel Platebody": { "inputs": [{ "item_name": "Large Steel Plate", "quantity": 4 }, { "item_name": "Steel Plate", "quantity": 3 }] },
+        "Steel Helmet": { "inputs": [{ "item_name": "Large Steel Plate", "quantity": 2 }, { "item_name": "Steel Rod", "quantity": 2 }] },
+        "Mithril Sword": { "inputs": [{ "item_name": "Large Mithril Rod", "quantity": 2 }, { "item_name": "Mithril Rod", "quantity": 8 }, { "item_name": "Mithril Bar", "quantity": 3 }, { "item_name": "Essence", "quantity": 1000 }] },
+        "Mithril Platelegs": { "inputs": [{ "item_name": "Large Mithril Plate", "quantity": 3 }, { "item_name": "Mithril Plate", "quantity": 4 }, { "item_name": "Mithril Bar", "quantity": 3 }, { "item_name": "Elven Cloth Pant Line", "quantity": 1 }] },
+        "Mithril Platebody": { "inputs": [{ "item_name": "Large Mithril Plate", "quantity": 4 }, { "item_name": "Mithril Plate", "quantity": 4 }, { "item_name": "Mithril Bar", "quantity": 5 }, { "item_name": "Elven Cloth Vest Line", "quantity": 1 }] },
+        "Mithril Helmet": { "inputs": [{ "item_name": "Large Mithril Plate", "quantity": 2 }, { "item_name": "Mithril Rod", "quantity": 4 }, { "item_name": "Mithril Bar", "quantity": 1 }] },
+        "Ore Crate": { "inputs": [{ "item_name": "Large Mithril Plate", "quantity": 6 }, { "item_name": "Gold Bar", "quantity": 12 }, { "item_name": "Steel Bar", "quantity": 4 }] },
+        "Volcanic Ring": { "inputs": [{ "item_name": "Charred Ring Piece #1", "quantity": 1 }, { "item_name": "Charred Ring Piece #2", "quantity": 1 }, { "item_name": "Charred Ring Piece #3", "quantity": 1 }, { "item_name": "Gold Bar", "quantity": 1 }] },
+        "Volcanic Ward": { "inputs": [{ "item_name": "Volcanic Core", "quantity": 1 }, { "item_name": "Golden Shield Frame", "quantity": 1 }, { "item_name": "Gold Bar", "quantity": 2 }] },
+        "DuskKnight Boots": { "inputs": [{ "item_name": "Exquisite Silk Boot Line", "quantity": 1 }, { "item_name": "DuskKnight Boot Left Sabaton", "quantity": 1 }, { "item_name": "DuskKnight Boot Right Sabaton", "quantity": 1 }, { "item_name": "DuskKnight Boot Greave", "quantity": 2 }, { "item_name": "Ebony Bar", "quantity": 2 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Platelegs": { "inputs": [{ "item_name": "Exquisite Silk Pant Line", "quantity": 1 }, { "item_name": "DuskKnight Leg Cuisses", "quantity": 1 }, { "item_name": "DuskKnight Leg Tuille", "quantity": 1 }, { "item_name": "DuskKnight Leg Tasset", "quantity": 2 }, { "item_name": "DuskKnight Leg Poleyn", "quantity": 2 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Platebody": { "inputs": [{ "item_name": "Exquisite Silk Vest Line", "quantity": 1 }, { "item_name": "DuskKnight Body Breastplate", "quantity": 1 }, { "item_name": "DuskKnight Body Pauldron", "quantity": 2 }, { "item_name": "DuskKnight Body Rerebrace", "quantity": 2 }, { "item_name": "DuskKnight Body Couter", "quantity": 2 }, { "item_name": "DuskKnight Body Vambrace", "quantity": 2 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] },
+        "DuskKnight Helmet": { "inputs": [{ "item_name": "DuskKnight Helmet Face Plate", "quantity": 1 }, { "item_name": "DuskKnight Helmet Head Plate", "quantity": 1 }, { "item_name": "DuskKnight Helmet Spike", "quantity": 1 }, { "item_name": "Ebony Bar", "quantity": 1 }, { "item_name": "DuskKnight Schematics", "quantity": 1 }] }
+      },
+      "furnace": {
+        "Bronze Bar": { "inputs": [{ "item_name": "Copper Ore", "quantity": 1 }, { "item_name": "Tin Ore", "quantity": 1 }] },
+        "Iron Bar": { "inputs": [{ "item_name": "Iron Ore", "quantity": 1 }] },
+        "Silver Bar": { "inputs": [{ "item_name": "Silver Ore", "quantity": 8 }] },
+        "Steel Bar": { "inputs": [{ "item_name": "Iron Ore", "quantity": 1 }, { "item_name": "Coal Ore", "quantity": 1 }] },
+        "Mithril Bar": { "inputs": [{ "item_name": "Mithril Ore", "quantity": 1 }, { "item_name": "Coal Ore", "quantity": 2 }] },
+        "Gold Bar": { "inputs": [{ "item_name": "Gold Ore", "quantity": 8 }] },
+        "Ebony Bar": { "inputs": [{ "item_name": "Ebony Ore", "quantity": 7 }] }
+      },
+      "vendor": {
+        "Rough Cloth": { "inputs": [{ "item_name": "Gold Coin", "quantity": 10 }] },
+        "Rough Leather": { "inputs": [{ "item_name": "Gold Coin", "quantity": 5 }, { "item_name": "cowhide", "quantity": 1 }] },
+        "Rough Leather (Direct 16)": { "inputs": [{ "item_name": "Gold Coin", "quantity": 16 }] },
+        "Thick Leather": { "inputs": [{ "item_name": "Gold Coin", "quantity": 13 }, { "item_name": "Tough Pelt", "quantity": 1 }] },
+        "Thick leather Vest Line": { "inputs": [{ "item_name": "Gold Coin", "quantity": 100 }, { "item_name": "Thick Leather", "quantity": 4 }] },
+        "Thick leather pant line": { "inputs": [{ "item_name": "Gold Coin", "quantity": 75 }, { "item_name": "Thick Leather", "quantity": 3 }] },
+        "Elven Cloth Vest Line": { "inputs": [{ "item_name": "Gold Coin", "quantity": 250 }, { "item_name": "Elven Cloth", "quantity": 5 }] },
+        "Elven Cloth Pant Line": { "inputs": [{ "item_name": "Gold Coin", "quantity": 225 }, { "item_name": "Elven Cloth", "quantity": 4 }] },
+        "Exquisite Silk Boot Line": { "inputs": [{ "item_name": "Gold Coin", "quantity": 5000 }, { "item_name": "Exquisite Silk", "quantity": 4 }] },
+        "Exquisite Silk Pant Line": { "inputs": [{ "item_name": "Gold Coin", "quantity": 7500 }, { "item_name": "Exquisite Silk", "quantity": 5 }] },
+        "Exquisite Silk Vest Line": { "inputs": [{ "item_name": "Gold Coin", "quantity": 10000 }, { "item_name": "Exquisite Silk", "quantity": 6 }] }
+      },
+      "mob": {
+        "Cow": { "inputs": [] },
+        "cowhide": { "inputs": [] },
+        "Boar": { "inputs": [] },
+        "Tough Pelt": { "inputs": [] },
+        "Elf": { "inputs": [] },
+        "Elf Scholar": { "inputs": [] },
+        "Elven Cloth": { "inputs": [] },
+        "Exquisite Silk": { "inputs": [] },
+        "DuskKnight Schematics": { "inputs": [] },
+        "Volcanic Core": { "inputs": [] },
+        "Charred Ring Piece #1": { "inputs": [] },
+        "Charred Ring Piece #2": { "inputs": [] },
+        "Charred Ring Piece #3": { "inputs": [] },
+        "Essence": { "inputs": [] }
+      }
+    };
+
+    const reusableItems = new Set(["DuskKnight Schematics"]);
+
+    const recipes = {};
+    for (const station in craftingData) {
+      for (const item in craftingData[station]) {
+        recipes[item] = { ...craftingData[station][item], station };
+      }
+    }
+
+    const allCraftableItems = Object.keys(recipes).sort();
+    let craftingQueue = [];
+    let currentCalculatedMaterials = {};
+    let currentStepsData = [];
+
+    window.addEventListener('click', (e) => {
+      if (!e.target.closest('#itemSearchInput') && !e.target.closest('#autocompleteList')) {
+        document.getElementById('autocompleteList').style.display = 'none';
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const saveEnabled = localStorage.getItem('wov_save_enabled') === 'true';
+      document.getElementById('saveProgressToggle').checked = saveEnabled;
+      
+      craftingQueue = []; 
+      renderQueue();
+      calculateCrafting();
+    });
+
+    function handleSearchInput() {
+      const query = document.getElementById('itemSearchInput').value.toLowerCase();
+      const listEl = document.getElementById('autocompleteList');
+      listEl.innerHTML = '';
+
+      const filtered = allCraftableItems.filter(item => item.toLowerCase().includes(query));
+
+      if (filtered.length === 0) {
+        listEl.style.display = 'none';
+        return;
+      }
+
+      filtered.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        div.textContent = item;
+        div.onclick = () => {
+          listEl.style.display = 'none';
+          addItemToQueue(item);
+          document.getElementById('itemSearchInput').value = '';
+          document.getElementById('itemSearchInput').focus();
+        };
+        listEl.appendChild(div);
+      });
+      listEl.style.display = 'block';
+    }
+
+    function handleSearchKeyDown(event) {
+      if (event.key === 'Enter') {
+        const listEl = document.getElementById('autocompleteList');
+        const firstItem = listEl.querySelector('.autocomplete-item');
+        if (firstItem) {
+          listEl.style.display = 'none';
+          addItemToQueue(firstItem.textContent);
+          document.getElementById('itemSearchInput').value = '';
+        } else {
+          const typedText = document.getElementById('itemSearchInput').value.trim();
+          if (recipes[typedText]) {
+            addItemToQueue(typedText);
+            document.getElementById('itemSearchInput').value = '';
+            listEl.style.display = 'none';
+          }
+        }
+      }
+    }
+
+    function addItemToQueue(specificName = null) {
+      const inputEl = document.getElementById('itemSearchInput');
+      const itemName = specificName || inputEl.value.trim();
+
+      if (!recipes[itemName]) return;
+
+      const existing = craftingQueue.find(q => q.name === itemName);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        craftingQueue.push({ name: itemName, qty: 1 });
+      }
+
+      inputEl.value = '';
+      document.getElementById('autocompleteList').style.display = 'none';
+      renderQueue();
+      calculateCrafting();
+    }
+
+    function updateQueueQty(index, change) {
+      craftingQueue[index].qty += change;
+      if (craftingQueue[index].qty < 1) craftingQueue[index].qty = 1;
+      renderQueue();
+      calculateCrafting();
+    }
+
+    function removeFromQueue(index) {
+      craftingQueue.splice(index, 1);
+      renderQueue();
+      calculateCrafting();
+    }
+
+    function clearQueue() {
+      craftingQueue = [];
+      renderQueue();
+      calculateCrafting();
+    }
+
+    function renderQueue() {
+      const box = document.getElementById('craftingQueueBox');
+      const badge = document.getElementById('queueCountBadge');
+      badge.textContent = `(${craftingQueue.length})`;
+
+      if (craftingQueue.length === 0) {
+        box.innerHTML = `<div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 0.82rem;">Queue is empty. Type above or pick a set below.</div>`;
+        return;
+      }
+
+      box.innerHTML = '';
+      craftingQueue.forEach((item, index) => {
+        box.innerHTML += `
+          <div class="queue-item">
+            <span class="queue-item-name" title="${item.name}">${item.name}</span>
+            <div class="queue-item-actions">
+              <button class="stepper-btn" onclick="updateQueueQty(${index}, -1)">-</button>
+              <span class="queue-item-qty">${item.qty}</span>
+              <button class="stepper-btn" onclick="updateQueueQty(${index}, 1)">+</button>
+              <button class="remove-queue-btn" onclick="removeFromQueue(${index})">&times;</button>
+            </div>
+          </div>`;
+      });
+    }
+
+    function loadGearSet(tier) {
+      let setMap = {};
+      if (tier === 'Bronze') {
+        setMap = { "Bronze Helmet": 1, "Bronze Platebody": 1, "Bronze Platelegs": 1, "Bronze Sword": 1 };
+      } else if (tier === 'Iron') {
+        setMap = { "Iron Helmet": 1, "Iron Platebody": 1, "Iron Platelegs": 1, "Iron Sword": 1 };
+      } else if (tier === 'Steel') {
+        setMap = { "Steel Helmet": 1, "Steel Platebody": 1, "Steel Platelegs": 1, "Steel Sword": 1 };
+      } else if (tier === 'Mithril') {
+        setMap = { "Mithril Helmet": 1, "Mithril Platebody": 1, "Mithril Platelegs": 1, "Mithril Sword": 1 };
+      } else if (tier === 'DuskKnight') {
+        setMap = { "DuskKnight Helmet": 1, "DuskKnight Platebody": 1, "DuskKnight Platelegs": 1, "DuskKnight Boots": 1 };
+      }
+
+      craftingQueue = [];
+      for (const [itemName, qty] of Object.entries(setMap)) {
+        craftingQueue.push({ name: itemName, qty: qty });
+      }
+
+      renderQueue();
+      calculateCrafting();
+    }
+
+    function handleToggleSaveProgress() {
+      const isChecked = document.getElementById('saveProgressToggle').checked;
+      localStorage.setItem('wov_save_enabled', isChecked);
+      if (!isChecked) localStorage.removeItem(getStorageKey());
+      else saveProgress();
+    }
+
+    function getStorageKey() {
+      const queueSignature = craftingQueue.map(q => `${q.name}:${q.qty}`).sort().join('|');
+      return `wov_queue_${queueSignature}`;
+    }
+
+    function saveProgress() {
+      const saveEnabled = document.getElementById('saveProgressToggle').checked;
+      if (!saveEnabled || craftingQueue.length === 0) return;
+
+      const key = getStorageKey();
+      const matCards = Array.from(document.querySelectorAll('.mat-card')).map(card => card.classList.contains('completed'));
+      const roadmapRows = Array.from(document.querySelectorAll('.roadmap-checkbox')).map(cb => cb.checked);
+      const container = document.getElementById('itemImageContainer');
+      const img = container.querySelector('img');
+      const customImage = img ? img.src : null;
+
+      const state = { craftingQueue, matCards, roadmapRows, customImage };
+      localStorage.setItem(key, JSON.stringify(state));
+    }
+
+    function restoreProgress() {
+      const saveEnabled = document.getElementById('saveProgressToggle').checked;
+      if (!saveEnabled) return;
+
+      const key = getStorageKey();
+      const saved = localStorage.getItem(key);
+      if (!saved) return;
+
+      try {
+        const { customImage, matCards, roadmapRows } = JSON.parse(saved);
+        if (customImage) setContainerImage(customImage);
+
+        const cardElements = document.querySelectorAll('.mat-card');
+        if (matCards) {
+          matCards.forEach((isCompleted, idx) => {
+            if (cardElements[idx] && isCompleted) cardElements[idx].classList.add('completed');
+          });
+        }
+
+        const cbElements = document.querySelectorAll('.roadmap-checkbox');
+        if (roadmapRows) {
+          roadmapRows.forEach((isChecked, idx) => {
+            if (cbElements[idx] && isChecked) {
+              cbElements[idx].checked = true;
+              toggleRoadmapStep(cbElements[idx], false);
+            }
+          });
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function resetCurrentProgress() {
+      const saveEnabled = document.getElementById('saveProgressToggle').checked;
+      if (saveEnabled) localStorage.removeItem(getStorageKey());
+      calculateCrafting();
+    }
+
+    function previewUploadedImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        setContainerImage(e.target.result);
+        saveProgress();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setContainerImage(src) {
+      const container = document.getElementById('itemImageContainer');
+      let img = container.querySelector('img');
+      if (!img) {
+        img = document.createElement('img');
+        container.appendChild(img);
+      }
+      img.src = src;
+    }
+
+    function updateItemImage(itemName) {
+      const container = document.getElementById('itemImageContainer');
+      if (!container) return;
+
+      container.innerHTML = '';
+      if (!itemName) return;
+
+      const filename = itemName.toLowerCase().replace(/[^a-z0-9]/g, '') + '.png';
+
+      const img = new Image();
+      img.alt = itemName;
+
+      img.onload = () => {
+        container.appendChild(img);
+      };
+
+      img.onerror = function() {
+        console.warn(`Image asset not found: images/${filename} (For item: "${itemName}"). Displaying fallback.`);
+        this.onerror = null; 
+        this.src = 'images/placeholder.png'; 
+        if (!container.contains(this)) {
+          container.appendChild(this);
+        }
+      };
+
+      img.src = `images/${filename}`;
+    }
+
+    function copyMaterialsSummary() {
+      if (craftingQueue.length === 0) { alert('Queue is empty!'); return; }
+      navigator.clipboard.writeText(generateTextContent()).then(() => alert('Summary copied to clipboard!'));
+    }
+
+    function generateTextContent() {
+      let text = `========================================\n`;
+      text += ` WINDS OF VALEN - CRAFTING & SOURCING PLAN\n`;
+      text += `========================================\n\n`;
+      
+      text += `[TARGET QUEUE]\n`;
+      craftingQueue.forEach(q => text += ` - ${q.qty}x ${q.name}\n`);
+      text += `\n`;
+
+      text += `[RAW MATERIALS & SOURCING CHECKLIST]\n`;
+      for (const [mat, totalAmt] of Object.entries(currentCalculatedMaterials)) {
+        text += ` [ ] ${mat}: ${totalAmt} ${reusableItems.has(mat) ? '(Reusable)' : ''}\n`;
+      }
+      text += `\n`;
+
+      text += `[ASSEMBLY & PROCUREMENT ROADMAP]\n`;
+      currentStepsData.forEach((step, idx) => {
+        text += ` Step ${idx + 1} | Source/Station: ${step.station}\n`;
+        text += `   Inputs: ${step.inputs}\n`;
+        text += `   Output: ${step.output}\n\n`;
+      });
+      return text;
+    }
+
+    function downloadTextFile() {
+      if (craftingQueue.length === 0) { alert('Queue is empty!'); return; }
+      const blob = new Blob([generateTextContent()], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = "wov-crafting-plan.txt";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadCSVFile() {
+      if (craftingQueue.length === 0) { alert('Queue is empty!'); return; }
+      const showTime = document.getElementById('showCraftingTimeToggle')?.checked || false;
+      let headers = ['Category', 'Item Name', 'Total Required', 'Notes'];
+      if (showTime) headers.push('Crafting Time');
+      
+      let csvRows = [headers.join(',')];
+      for (const [mat, totalAmt] of Object.entries(currentCalculatedMaterials)) {
+        let row = [`"Sourcing/Raw"`, `"${mat}"`, totalAmt, `"${reusableItems.has(mat) ? 'Reusable' : 'Base'}"`];
+        if (showTime) row.push(`"N/A"`);
+        csvRows.push(row.join(','));
+      }
+      craftingQueue.forEach(q => {
+        let row = [`"Queued Target"`, `"${q.name}"`, q.qty, `"Final/Queued"`];
+        if (showTime) row.push(`"${typeof getItemCraftTime === 'function' ? formatTime(getItemCraftTime(q.name) * q.qty) : 'N/A'}"`);
+        csvRows.push(row.join(','));
+      });
+      
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const linkEl = document.createElement('a');
+      linkEl.href = url;
+      linkEl.download = "wov-crafting-materials.csv";
+      document.body.appendChild(linkEl);
+      linkEl.click();
+      document.body.removeChild(linkEl);
+      URL.revokeObjectURL(url);
+    }
+
+    function updateProgressStats() {
+      const allCards = document.querySelectorAll('.mat-card, .roadmap-row');
+      if (allCards.length === 0) return;
+      const completedCards = document.querySelectorAll('.mat-card.completed, .roadmap-row.completed');
+      const percentage = Math.round((completedCards.length / allCards.length) * 100);
+      document.getElementById('progressPercentage').textContent = `${percentage}%`;
+      document.getElementById('progressBarFill').style.width = `${percentage}%`;
+    }
+
+    function toggleRoadmapStep(checkbox, doSave = true) {
+      const row = checkbox.closest('tr');
+      if (checkbox.checked) row.classList.add('completed');
+      else row.classList.remove('completed');
+      updateProgressStats();
+      if (doSave) saveProgress();
+    }
+
+    function createTreeNodeHTML(itemName, multiplier, station = null) {
+      const filename = itemName.toLowerCase().replace(/[^a-z0-9]/g, '') + '.png';
+      const isReusable = reusableItems.has(itemName);
+      const qtyText = isReusable ? 'Reusable' : `x${multiplier}`;
+      const stationText = station ? `<span class="tree-node-station">[${station}]</span>` : '';
+
+      return `
+        <div class="tree-node">
+          <img src="images/${filename}" alt="${itemName}" onerror="this.onerror=null; this.src='images/placeholder.png';">
+          <span class="tree-node-title">${itemName}</span>
+          ${stationText}
+          <span class="tree-node-qty">${qtyText}</span>
+        </div>
+      `;
+    }
+
+    function resolveTreeHTML(itemName, multiplier, itemTotalsMap, rawTotalsMap, trackedReusable) {
+      const recipe = recipes[itemName];
+
+      if (!recipe || recipe.inputs.length === 0) {
+        if (reusableItems.has(itemName)) {
+          if (!trackedReusable.has(itemName)) {
+            trackedReusable.add(itemName);
+            rawTotalsMap[itemName] = 1;
+          }
+        } else {
+          rawTotalsMap[itemName] = (rawTotalsMap[itemName] || 0) + multiplier;
+        }
+        return `<li>${createTreeNodeHTML(itemName, multiplier, recipe ? recipe.station : null)}</li>`;
+      }
+
+      itemTotalsMap[itemName] = (itemTotalsMap[itemName] || 0) + multiplier;
+
+      let html = `<li>${createTreeNodeHTML(itemName, multiplier, recipe.station)}<ul>`;
+      for (const input of recipe.inputs) {
+        const reqQty = reusableItems.has(input.item_name) ? 1 : input.quantity * multiplier;
+        html += resolveTreeHTML(input.item_name, reqQty, itemTotalsMap, rawTotalsMap, trackedReusable);
+      }
+      html += '</ul></li>';
+      return html;
+    }
+
+    function calculateCrafting() {
+      const treeContainer = document.getElementById('treeViewContainer');
+
+      if (craftingQueue.length === 0) {
+        document.getElementById('selectedItemTitle').textContent = `Queue is Empty`;
+        document.getElementById('rawMaterialsContainer').innerHTML = `<div style="color:var(--text-muted); font-size:0.9rem;">Add items to compute raw requirements.</div>`;
+        document.getElementById('roadmapTableBody').innerHTML = '';
+        treeContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">No items in queue.</div>';
+        currentCalculatedMaterials = {};
+        currentStepsData = [];
+        updateProgressStats();
+        return;
+      }
+
+      const titleSummary = craftingQueue.map(q => `${q.qty}x ${q.name}`).join(', ');
+      document.getElementById('selectedItemTitle').textContent = titleSummary;
+      updateItemImage(craftingQueue[0].name);
+
+      let aggregatedItemTotals = {};
+      let aggregatedRawTotals = {};
+      let globalTrackedReusable = new Set();
+      let fullTreeHTML = '';
+
+      craftingQueue.forEach(queueItem => {
+        fullTreeHTML += `<div class="tree-group-title">Target: ${queueItem.qty}x ${queueItem.name}</div>`;
+        fullTreeHTML += `<ul>${resolveTreeHTML(queueItem.name, queueItem.qty, aggregatedItemTotals, aggregatedRawTotals, globalTrackedReusable)}</ul>`;
+      });
+
+      currentCalculatedMaterials = aggregatedRawTotals;
+
+      let generatedSteps = [];
+      const itemKeys = Object.keys(aggregatedItemTotals);
+      let processed = new Set();
+      let safetyCounter = 0;
+
+      while (processed.size < itemKeys.length && safetyCounter < 100) {
+        safetyCounter++;
+        let addedThisPass = false;
+
+        for (const itemName of itemKeys) {
+          if (processed.has(itemName)) continue;
+
+          const recipe = recipes[itemName];
+          const dependenciesMet = !recipe || recipe.inputs.length === 0 || recipe.inputs.every(inp => !recipes[inp.item_name] || recipes[inp.item_name].inputs.length === 0 || processed.has(inp.item_name));
+
+          if (dependenciesMet) {
+            processed.add(itemName);
+            addedThisPass = true;
+
+            const totalQty = aggregatedItemTotals[itemName];
+            const itemLvl = getItemLevel(itemName);
+            
+            const stationDisplay = recipe.station;
+            
+            const outputDisplay = itemLvl !== null 
+              ? `${totalQty}x ${itemName} <span style="font-size:0.75rem; color:var(--highlight); font-weight:600;">(Lvl ${itemLvl})</span>` 
+              : `${totalQty}x ${itemName}`;
+
+            const condensedInputs = recipe && recipe.inputs.length > 0 
+              ? recipe.inputs.map(i => {
+                  const qtyPerUnit = reusableItems.has(i.item_name) ? 1 : i.quantity;
+                  const totalInputQty = reusableItems.has(i.item_name) ? 1 : qtyPerUnit * totalQty;
+                  return `${totalInputQty}x ${i.item_name}${reusableItems.has(i.item_name) ? ' [Reusable]' : ''}`;
+                }).join(', ')
+              : '<em>None (Procured directly)</em>';
+
+            generatedSteps.push({
+              station: stationDisplay,
+              inputs: condensedInputs,
+              output: outputDisplay
+            });
+          }
+        }
+        if (!addedThisPass) break;
+      }
+
+      currentStepsData = generatedSteps;
+
+      const rawContainer = document.getElementById('rawMaterialsContainer');
+      rawContainer.innerHTML = '';
+      for (const [mat, totalNeeded] of Object.entries(aggregatedRawTotals)) {
+        const isReusable = reusableItems.has(mat);
+        const mobLvl = mobLevels[mat];
+
+        rawContainer.innerHTML += `
+          <div class="mat-card" onclick="this.classList.toggle('completed'); updateProgressStats(); saveProgress();">
+            <div class="mat-info">
+              <div class="checkbox"></div>
+              <span>${mat} ${isReusable ? '<span style="font-size:0.7rem; color:var(--highlight);">(Reusable)</span>' : ''} ${mobLvl !== undefined ? `<span style="font-size:0.7rem; color:var(--highlight); font-weight:600;">(Lvl ${mobLvl})</span>` : ''}</span>
+            </div>
+            <div class="mat-counts">
+              <span class="count">${totalNeeded}</span>
+            </div>
+          </div>`;
+      }
+
+      const tableBody = document.getElementById('roadmapTableBody');
+      tableBody.innerHTML = '';
+      generatedSteps.forEach((step, idx) => {
+        tableBody.innerHTML += `
+          <tr class="roadmap-row" onclick="const cb = this.querySelector('.roadmap-checkbox'); cb.checked = !cb.checked; toggleRoadmapStep(cb);">
+            <td>
+              <div class="roadmap-checkbox-container" onclick="event.stopPropagation();">
+                <input type="checkbox" class="roadmap-checkbox" onchange="toggleRoadmapStep(this)">
+                <strong>Step ${idx + 1}</strong>
+              </div>
+            </td>
+            <td><span class="station-badge">${step.station}</span></td>
+            <td>${step.inputs}</td>
+            <td><strong>${step.output}</strong></td>
+          </tr>`;
+      });
+
+      treeContainer.innerHTML = fullTreeHTML;
+
+      restoreProgress();
+      updateProgressStats();
+    }
+  </script>
+</body>
+</html>
